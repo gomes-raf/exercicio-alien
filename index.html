@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercício do Alien</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style> body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; } </style>
+</head>
+
+<body>
+    <script>
+        // Aqui são definidas as variáveis "larguraJogo" e "alturaJogo" por meio da função "const". Útil para, por meio dela, indicar tamanho ou largura de outros elementos posteriores.
+        const larguraJogo = 700;
+        const alturaJogo = 850;
+
+        // Aqui se define a variável config que armazena e adiciona alguns dados importantes para o jogo, como adicionar o framework Phaser dentro do código e definir a altura e largura da tela do jogo (baseado nas variáveis definidas anteriormente).
+        const config = {
+            type: Phaser.AUTO,
+            width: larguraJogo,
+            height: alturaJogo,
+
+        //A gravidade, assim como suas configurações são definidas. O debug também é ativado (comando para que fique visível a hitbox dos elementos). 
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 300},
+                    debug: true
+                }
+            },
+
+        //As partes essenciais de um código html são introduzidas e definidas suas funções.
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        //Os dados do framework Phaser são importados ao game.
+        const game = new Phaser.Game(config);
+
+        //Uma variável é criada para armazenar o alienigena, o teclado, o fogo e os demais elementos introduzidos a partir do "var".
+        var alien;
+        var teclado;
+        var fogo;
+        var plataforma;
+        var moeda;
+        var pontuacao = 0;
+        var placar;
+        var estatua;
+        let moedas = [] //Array que armazena as moedas.
+
+        //Em preload, as imagens dos objetos e elementos do jogo são introduzidos ao código.
+        function preload() {
+            
+            this.load.image('background', 'assets/bg.png'); //Tela de fundo.
+
+            this.load.image('player', 'assets/alienigena.png'); //Alien.
+
+            this.load.image('turbo_nave', 'assets/turbo.png'); //Turbo.
+
+            this.load.image('plataforma_tijolo', 'assets/tijolos.png'); //Plataforma.
+
+            this.load.image('moeda', 'assets/moeda.png'); //Moeda.
+
+            this.load.image('estatua_alien', 'assets/estatua.png'); //Estátua.
+        }
+ 
+        //Em create, as imagens adicionadas em preload são definitivamente introduzidas e criadas no game.
+        function create() {
+
+        //Adiciona e cria 5 moedas dentro da array.
+            for (let i = 0; i < 5; i++) {
+                let moeda = this.add.image(100 + i * 100, 200, 'moeda');
+                moedas.push(moeda);
+            }
+
+            this.add.image(larguraJogo/2, alturaJogo/2, 'background'); //Background é criado e introduzido na tela do jogo e suas dimensões são proporcionais as variáveis "larguraJogo" e "alturaJogo", porém pela metade.
+
+            fogo = this.add.sprite(0, 0, 'turbo_nave'); //Turbo adicionado, junto com suas cordenadas.
+
+            alien = this.physics.add.sprite(larguraJogo/2, 0, 'player'); //Atribui à variável "alien" sua posição de origem (larguraJogo/2, 0), assim como relaciona com a imagem setada em "update".
+            alien.setCollideWorldBounds(true);
+
+            teclado = this.input.keyboard.createCursorKeys(); //Atribui à variável "teclado" as propriedades das setas do teclado.
+
+            plataforma = this.physics.add.staticImage(larguraJogo/2, alturaJogo/2, 'plataforma_tijolo'); //Define a variável "plataforma" como uma imagem estática, define sua posição na tela e relaciona com  a imagem gerada em update.
+            this.physics.add.collider(alien, plataforma); //Define colisão entre o alien e a plataforma.
+
+            moeda = this.physics.add.sprite(larguraJogo/2, 0, 'moeda'); //Cria a moeda como um sprite imóvel e define sua posição, além de relacionar com a imagem introduzida em update.
+            moeda.setCollideWorldBounds(true); //Não permite que a moeda ultrapasse os limites da tela.
+            moeda.setBounce(0.7); //Define o quanto a moeda quica.
+            this.physics.add.collider(moeda, plataforma); //Define a colisão entre a moeda e a plataforma.
+            this.physics.add.collider(moeda, estatua); //Define a colisão entre a moeda e a estátua.
+
+            estatua = this.physics.add.sprite(150, 560, 'estatua_alien').setScale(0.17); //Cria a estátua como um sprite imóvel, definindo sua posição na tela, associando a uma imagem e definindo sua escala.
+            estatua.body.setImmovable(true); //Define que a estátua não deve se mover com colisões.
+            estatua.body.allowGravity = false; //Define que a estátua não deve ser afetada pela gravidade.
+            estatua.body.setSize(estatua.width * 0.33, estatua.height * 0.5); //Define a hitbox da estátua e seu tamanho.
+            estatua.body.setOffset(estatua.width * 0.3, estatua.height * 0.4); //Desloca a hitbox em referência à posição da estátua.
+            this.physics.add.collider(alien, estatua); //Define a colisão entre o alien e a estátua;
+            this.physics.add.collider(moeda, estatua); //Define a colisão entre a moeda e a estátua;
+
+            placar = this.add.text(50, 50, 'Moedas:' + pontuacao, {fontSize:'45px', fill:'#495613'}); //Adiciona o placar, definindo sua posição e a mensagem na tela, além de seu tamanho e sua aparência.
+
+            this.physics.add.overlap(alien, moeda, function(){ //Quando alien e moeda se sobreporem, o seguinte ocorre:
+
+            moeda.setVisible(false); //Moeda se torna invisível.
+
+            var posicaoMoeda_Y = Phaser.Math.RND.between(50,650); //Nova moeda é gerada aleatoriamente na tela.
+            moeda.setPosition(posicaoMoeda_Y, 100); //Moeda surge na altura 100 (de cima para baixo).
+
+            pontuacao +=1; //Aumenta a pontuação em mais um.
+            placar.setText('Moedas:' + pontuacao); //Relaciona tudo isso ao placar (sem essa parte, o placar ainda existe, mas não é atualizado).
+
+            moeda.setVisible(true); //Moeda volta a ser visível.
+
+            });
+
+        }
+
+        function update() {
+
+            //Se a tecla esquerda é pressionada, alien se desloca para esquerda na velocidade definida.
+            if(teclado.left.isDown) {
+                alien.setVelocityX(-150); }
+            
+            //Se a tecla direita é pressionada, personagem se move para direita na velocidade definida.
+            else if(teclado.right.isDown) {
+                alien.setVelocityX(150); }
+            
+            //Se nada for pressionado, alien não deve se deslocar na horizontal.
+            else {
+                alien.setVelocityX(0); 
+            }
+            
+            //Se a tecla de cima é pressionada, alien se desloca para cima na velocidade definida.
+            if(teclado.up.isDown) {
+                alien.setVelocityY(-150);
+                ativarTurbo(); //Turbo é ativado.
+            }
+            
+            else { semTurbo(); } //Sem a seta para cima pressionada, fogo deve ser invisível. 
+
+            fogo.setPosition(alien.x, alien.y + alien.height/2); //Define a posição atualizada do fogo de acordo com a posição do alien.
+        
+        }
+
+        function ativarTurbo() {
+            fogo.setVisible(true); //Caso a função "ativarTurbo" seja ativada, fogo deve ser visível.
+        }
+
+        function semTurbo() {
+            fogo.setVisible(false); //Caso a função "semTurbo" seja ativada, fogo deve ser invisível.
+        }
+
+    </script>
+</body>
+</html>
