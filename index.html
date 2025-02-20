@@ -25,7 +25,7 @@
                 default: 'arcade',
                 arcade: {
                     gravity: { y: 300},
-                    debug: true
+                    debug: false
                 }
             },
 
@@ -49,7 +49,7 @@
         var pontuacao = 0;
         var placar;
         var estatua;
-        let moedas = [] //Array que armazena as moedas.
+        let posicao = [ {width: 400, height: 300}, {width: 100, height: 100}, {width: 400, height: 700}, {width: 600, height: 500} ];
 
         //Em preload, as imagens dos objetos e elementos do jogo são introduzidos ao código.
         function preload() {
@@ -71,10 +71,6 @@
         function create() {
 
         //Adiciona e cria 5 moedas dentro da array.
-            for (let i = 0; i < 5; i++) {
-                let moeda = this.add.image(100 + i * 100, 200, 'moeda');
-                moedas.push(moeda);
-            }
 
             this.add.image(larguraJogo/2, alturaJogo/2, 'background'); //Background é criado e introduzido na tela do jogo e suas dimensões são proporcionais as variáveis "larguraJogo" e "alturaJogo", porém pela metade.
 
@@ -104,7 +100,7 @@
 
             placar = this.add.text(50, 50, 'Moedas:' + pontuacao, {fontSize:'45px', fill:'#495613'}); //Adiciona o placar, definindo sua posição e a mensagem na tela, além de seu tamanho e sua aparência.
 
-            this.physics.add.overlap(alien, moeda, function(){ //Quando alien e moeda se sobreporem, o seguinte ocorre:
+            this.physics.add.overlap(alien, moeda, function(){ //Quando alien e moeda se sobreporem, o seguinte ocorre:         
 
             moeda.setVisible(false); //Moeda se torna invisível.
 
@@ -116,6 +112,13 @@
 
             moeda.setVisible(true); //Moeda volta a ser visível.
 
+            //Toda vez que o alien pegar uma moeda, ele deve ser teleportado para alguma coordenada definida dentro da array "posicao".
+            for (let i = 0; i < posicao.length; i++) {
+        if (Phaser.Math.RND.between(0, posicao.length - 1) === i) {
+            alien.setPosition(posicao[i].width, posicao[i].height);
+            break;
+        } 
+          }
             });
 
         }
